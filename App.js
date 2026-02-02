@@ -19,8 +19,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Swipeable } from "react-native-gesture-handler";
+import {
+  GestureHandlerRootView,
+  Swipeable,
+} from "react-native-gesture-handler";
 
 export default function App() {
   const scheme = useColorScheme();
@@ -153,7 +155,11 @@ export default function App() {
 
         {groups.map((group) => (
           <View key={group.id} style={styles.groupCard(theme)}>
-            <TouchableOpacity onPress={() => setActiveGroupId(group.id)}>
+            <TouchableOpacity
+              onPress={() =>
+                setActiveGroupId(activeGroupId === group.id ? null : group.id)
+              }
+            >
               <Text style={styles.groupTitle(theme)}>{group.title}</Text>
             </TouchableOpacity>
 

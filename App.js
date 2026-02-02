@@ -36,7 +36,10 @@ export default function App() {
 
   const [lastDeleted, setLastDeleted] = useState(null);
   const [showUndo, setShowUndo] = useState(false);
+  const [highlightedItemId, setHighlightedItemId] = useState(null);
   const undoTimer = useRef(null);
+  const highlightTimer = useRef(null);
+  const scrollViewRefs = useRef({});
 
   /* ---------------- Load / Save ---------------- */
   useEffect(() => {
@@ -125,6 +128,10 @@ export default function App() {
   const undoDelete = () => {
     if (!lastDeleted) return;
 
+    const itemIndex = lastDeleted.index;
+    const itemHeight = 50; // Approximate height of each item
+    const scrollPosition = Math.max(0, itemIndex * itemHeight - 100);
+
     setGroups((prev) =>
       prev.map((g) => {
         if (g.id === lastDeleted.groupId) {
@@ -135,6 +142,21 @@ export default function App() {
         return g;
       }),
     );
+
+    setHighlightedItemId(lastDeleted.item.id);
+
+    if (highlightTimer.current) clearTimeout(highlightTimer.current);
+    highlightTimer.current = setTimeout(() => {
+      setHighlightedItemId(null);
+    }, 1000);
+
+    // Scroll to make the item visible
+    setTimeout(() => {
+      const scrollView = scrollViewRefs.current[lastDeleted.groupId];
+      if (scrollView) {
+        scrollView.scrollTo({ y: scrollPosition, animated: true });
+      }
+    }, 100);
 
     setShowUndo(false);
     setLastDeleted(null);
@@ -188,7 +210,10 @@ export default function App() {
                   </TouchableOpacity>
                 </View>
 
-                <ScrollView style={styles.itemsScroll}>
+                <ScrollView
+                  style={styles.itemsScroll}
+                  ref={(ref) => (scrollViewRefs.current[group.id] = ref)}
+                >
                   {group.items.map((item) => (
                     <Swipeable
                       key={item.id}
@@ -201,7 +226,13 @@ export default function App() {
                         </TouchableOpacity>
                       )}
                     >
-                      <View style={styles.itemRow(theme)}>
+                      <View
+                        style={[
+                          styles.itemRow(theme),
+                          highlightedItemId === item.id &&
+                            styles.highlightedItem,
+                        ]}
+                      >
                         <TouchableOpacity
                           onPress={() => toggleItem(group.id, item.id)}
                         >
@@ -315,6 +346,11 @@ const styles = StyleSheet.create({
     backgroundColor: t.card,
     paddingVertical: 10,
   }),
+  highlightedItem: {
+    backgroundColor: "#ADD8E6",
+    borderRadius: 8,
+    opacity: 0.9,
+  },
   checkbox: {
     fontSize: 20,
     marginRight: 12,

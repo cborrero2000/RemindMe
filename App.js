@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   },
   undoBar: (t) => ({
     position: "absolute",
-    bottom: 20,
+    bottom: 80,
     left: 16,
     right: 16,
     backgroundColor: t.card,
@@ -337,6 +337,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.2,
     shadowRadius: 6,
-    elevation: 6,
+    elevation: 999,
+    zIndex: 999,
   }),
 });

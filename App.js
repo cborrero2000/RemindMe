@@ -16,6 +16,7 @@ import {
   StyleSheet,
   useColorScheme,
   ScrollView,
+  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -27,7 +28,8 @@ import {
 
 export default function App() {
   const scheme = useColorScheme();
-  const theme = scheme === "dark" ? dark : light;
+  const [isDarkMode, setIsDarkMode] = useState(scheme === "dark");
+  const theme = isDarkMode ? dark : light;
 
   const [groups, setGroups] = useState([]);
   const [groupText, setGroupText] = useState("");
@@ -47,6 +49,10 @@ export default function App() {
   useEffect(() => {
     loadGroups();
   }, []);
+
+  useEffect(() => {
+    StatusBar.setBarStyle(isDarkMode ? "light-content" : "dark-content");
+  }, [isDarkMode]);
 
   useEffect(() => {
     AsyncStorage.setItem("groups", JSON.stringify(groups));
@@ -228,7 +234,15 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container(theme)}>
-        <Text style={styles.title(theme)}>RemindMe</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title(theme)}>RemindMe</Text>
+          <TouchableOpacity
+            style={styles.themeBtn(theme)}
+            onPress={() => setIsDarkMode(!isDarkMode)}
+          >
+            <Text style={styles.themeBtnText}>{isDarkMode ? "☀️" : "🌙"}</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Add Group */}
         <View style={styles.inputRow}>
@@ -385,6 +399,23 @@ const styles = StyleSheet.create({
     color: t.text,
     marginBottom: 12,
   }),
+  titleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  themeBtn: (t) => ({
+    backgroundColor: t.card,
+    borderRadius: 12,
+    width: 48,
+    height: 48,
+    justifyContent: "center",
+    alignItems: "center",
+  }),
+  themeBtnText: {
+    fontSize: 24,
+  },
   inputRow: {
     flexDirection: "row",
     marginBottom: 10,

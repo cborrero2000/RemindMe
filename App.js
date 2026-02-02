@@ -331,7 +331,12 @@ export default function App() {
                             <TouchableOpacity
                               onPress={() => toggleItem(group.id, item.id)}
                             >
-                              <Text style={styles.checkbox}>
+                              <Text
+                                style={[
+                                  styles.checkbox,
+                                  { color: theme.primary },
+                                ]}
+                              >
                                 {item.done ? "☑" : "☐"}
                               </Text>
                             </TouchableOpacity>

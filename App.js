@@ -184,35 +184,35 @@ export default function App() {
 
                 <ScrollView style={styles.itemsScroll}>
                   {group.items.map((item) => (
-                  <Swipeable
-                    key={item.id}
-                    renderRightActions={() => (
-                      <TouchableOpacity
-                        style={styles.deleteAction}
-                        onPress={() => deleteItem(group.id, item)}
-                      >
-                        <Text style={styles.deleteText}>Delete</Text>
-                      </TouchableOpacity>
-                    )}
-                  >
-                    <View style={styles.itemRow(theme)}>
-                      <TouchableOpacity
-                        onPress={() => toggleItem(group.id, item.id)}
-                      >
-                        <Text style={styles.checkbox}>
-                          {item.done ? "☑" : "☐"}
+                    <Swipeable
+                      key={item.id}
+                      renderRightActions={() => (
+                        <TouchableOpacity
+                          style={styles.deleteAction}
+                          onPress={() => deleteItem(group.id, item)}
+                        >
+                          <Text style={styles.deleteText}>Delete</Text>
+                        </TouchableOpacity>
+                      )}
+                    >
+                      <View style={styles.itemRow(theme)}>
+                        <TouchableOpacity
+                          onPress={() => toggleItem(group.id, item.id)}
+                        >
+                          <Text style={styles.checkbox}>
+                            {item.done ? "☑" : "☐"}
+                          </Text>
+                        </TouchableOpacity>
+                        <Text
+                          style={[
+                            styles.itemText(theme),
+                            item.done && styles.itemDone(theme),
+                          ]}
+                        >
+                          {item.title}
                         </Text>
-                      </TouchableOpacity>
-                      <Text
-                        style={[
-                          styles.itemText(theme),
-                          item.done && styles.itemDone(theme),
-                        ]}
-                      >
-                        {item.title}
-                      </Text>
-                    </View>
-                  </Swipeable>
+                      </View>
+                    </Swipeable>
                   ))}
                 </ScrollView>
               </View>

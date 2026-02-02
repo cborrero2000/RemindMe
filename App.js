@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   useColorScheme,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -181,7 +182,8 @@ export default function App() {
                   </TouchableOpacity>
                 </View>
 
-                {group.items.map((item) => (
+                <ScrollView style={styles.itemsScroll}>
+                  {group.items.map((item) => (
                   <Swipeable
                     key={item.id}
                     renderRightActions={() => (
@@ -211,7 +213,8 @@ export default function App() {
                       </Text>
                     </View>
                   </Swipeable>
-                ))}
+                  ))}
+                </ScrollView>
               </View>
             )}
           </View>
@@ -296,6 +299,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: t.text,
   }),
+  itemsScroll: {
+    maxHeight: 300,
+    marginVertical: 8,
+  },
   itemRow: (t) => ({
     flexDirection: "row",
     alignItems: "center",

@@ -37,9 +37,11 @@ export default function App() {
   const [lastDeleted, setLastDeleted] = useState(null);
   const [showUndo, setShowUndo] = useState(false);
   const [highlightedItemId, setHighlightedItemId] = useState(null);
+  const [highlightedGroupId, setHighlightedGroupId] = useState(null);
   const undoTimer = useRef(null);
   const highlightTimer = useRef(null);
   const scrollViewRefs = useRef({});
+  const groupsScrollRef = useRef(null);
 
   /* ---------------- Load / Save ---------------- */
   useEffect(() => {
@@ -87,6 +89,34 @@ export default function App() {
     setItemText("");
   };
 
+  const deleteGroup = async (groupId) => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    let deletedGroup = null;
+    let groupIndex = 0;
+
+    setGroups((prev) => {
+      groupIndex = prev.findIndex((g) => g.id === groupId);
+      deletedGroup = prev[groupIndex];
+      return prev.filter((g) => g.id !== groupId);
+    });
+
+    setLastDeleted({
+      groupId,
+      group: deletedGroup,
+      index: groupIndex,
+      isGroup: true,
+    });
+    setShowUndo(true);
+
+    if (activeGroupId === groupId) {
+      setActiveGroupId(null);
+    }
+
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    undoTimer.current = setTimeout(() => setShowUndo(false), 4000);
+  };
+
   const toggleItem = async (groupId, itemId) => {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
@@ -128,35 +158,67 @@ export default function App() {
   const undoDelete = () => {
     if (!lastDeleted) return;
 
-    const itemIndex = lastDeleted.index;
-    const itemHeight = 50; // Approximate height of each item
-    const scrollPosition = Math.max(0, itemIndex * itemHeight - 100);
+    if (lastDeleted.isGroup) {
+      // Undo group deletion
+      setGroups((prev) => {
+        const newGroups = [...prev];
+        newGroups.splice(lastDeleted.index, 0, lastDeleted.group);
+        return newGroups;
+      });
 
-    setGroups((prev) =>
-      prev.map((g) => {
-        if (g.id === lastDeleted.groupId) {
-          const newItems = [...g.items];
-          newItems.splice(lastDeleted.index, 0, lastDeleted.item);
-          return { ...g, items: newItems };
+      setHighlightedGroupId(lastDeleted.groupId);
+
+      if (highlightTimer.current) clearTimeout(highlightTimer.current);
+      highlightTimer.current = setTimeout(() => {
+        setHighlightedGroupId(null);
+      }, 1000);
+
+      // Scroll to make the group visible
+      setTimeout(() => {
+        if (groupsScrollRef.current) {
+          const groupHeight = 80; // Approximate height of each group
+          const scrollPosition = Math.max(
+            0,
+            lastDeleted.index * groupHeight - 100,
+          );
+          groupsScrollRef.current.scrollTo({
+            y: scrollPosition,
+            animated: true,
+          });
         }
-        return g;
-      }),
-    );
+      }, 100);
+    } else {
+      // Undo item deletion
+      const itemIndex = lastDeleted.index;
+      const itemHeight = 50; // Approximate height of each item
+      const scrollPosition = Math.max(0, itemIndex * itemHeight - 100);
 
-    setHighlightedItemId(lastDeleted.item.id);
+      setGroups((prev) =>
+        prev.map((g) => {
+          if (g.id === lastDeleted.groupId) {
+            const newItems = [...g.items];
+            newItems.splice(lastDeleted.index, 0, lastDeleted.item);
+            return { ...g, items: newItems };
+          }
+          return g;
+        }),
+      );
 
-    if (highlightTimer.current) clearTimeout(highlightTimer.current);
-    highlightTimer.current = setTimeout(() => {
-      setHighlightedItemId(null);
-    }, 1000);
+      setHighlightedItemId(lastDeleted.item.id);
 
-    // Scroll to make the item visible
-    setTimeout(() => {
-      const scrollView = scrollViewRefs.current[lastDeleted.groupId];
-      if (scrollView) {
-        scrollView.scrollTo({ y: scrollPosition, animated: true });
-      }
-    }, 100);
+      if (highlightTimer.current) clearTimeout(highlightTimer.current);
+      highlightTimer.current = setTimeout(() => {
+        setHighlightedItemId(null);
+      }, 1000);
+
+      // Scroll to make the item visible
+      setTimeout(() => {
+        const scrollView = scrollViewRefs.current[lastDeleted.groupId];
+        if (scrollView) {
+          scrollView.scrollTo({ y: scrollPosition, animated: true });
+        }
+      }, 100);
+    }
 
     setShowUndo(false);
     setLastDeleted(null);
@@ -182,80 +244,99 @@ export default function App() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.groupsScroll}>
+        <ScrollView style={styles.groupsScroll} ref={groupsScrollRef}>
           {groups.map((group) => (
-            <View key={group.id} style={styles.groupCard(theme)}>
-              <TouchableOpacity
-                onPress={() =>
-                  setActiveGroupId(activeGroupId === group.id ? null : group.id)
-                }
+            <Swipeable
+              key={group.id}
+              renderRightActions={() => (
+                <TouchableOpacity
+                  style={styles.deleteAction}
+                  onPress={() => deleteGroup(group.id)}
+                >
+                  <Text style={styles.deleteText}>Delete</Text>
+                </TouchableOpacity>
+              )}
+            >
+              <View
+                style={[
+                  styles.groupCard(theme),
+                  highlightedGroupId === group.id && styles.highlightedGroup,
+                ]}
               >
-                <Text style={styles.groupTitle(theme)}>{group.title}</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() =>
+                    setActiveGroupId(
+                      activeGroupId === group.id ? null : group.id,
+                    )
+                  }
+                >
+                  <Text style={styles.groupTitle(theme)}>{group.title}</Text>
+                </TouchableOpacity>
 
-              {activeGroupId === group.id && (
-                <View style={{ marginTop: 10 }}>
-                  <View style={styles.inputRow}>
-                    <TextInput
-                      style={styles.input(theme)}
-                      placeholder="Add item…"
-                      placeholderTextColor={theme.subtext}
-                      value={itemText}
-                      onChangeText={setItemText}
-                    />
-                    <TouchableOpacity
-                      style={styles.addBtn(theme)}
-                      onPress={addItem}
-                    >
-                      <Text style={styles.addText}>＋</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <ScrollView
-                    style={styles.itemsScroll}
-                    ref={(ref) => (scrollViewRefs.current[group.id] = ref)}
-                  >
-                    {group.items.map((item) => (
-                      <Swipeable
-                        key={item.id}
-                        renderRightActions={() => (
-                          <TouchableOpacity
-                            style={styles.deleteAction}
-                            onPress={() => deleteItem(group.id, item)}
-                          >
-                            <Text style={styles.deleteText}>Delete</Text>
-                          </TouchableOpacity>
-                        )}
+                {activeGroupId === group.id && (
+                  <View style={{ marginTop: 10 }}>
+                    <View style={styles.inputRow}>
+                      <TextInput
+                        style={styles.input(theme)}
+                        placeholder="Add item…"
+                        placeholderTextColor={theme.subtext}
+                        value={itemText}
+                        onChangeText={setItemText}
+                      />
+                      <TouchableOpacity
+                        style={styles.addBtn(theme)}
+                        onPress={addItem}
                       >
-                        <View
-                          style={[
-                            styles.itemRow(theme),
-                            highlightedItemId === item.id &&
-                              styles.highlightedItem,
-                          ]}
+                        <Text style={styles.addText}>＋</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <ScrollView
+                      style={styles.itemsScroll}
+                      ref={(ref) => (scrollViewRefs.current[group.id] = ref)}
+                    >
+                      {group.items.map((item) => (
+                        <Swipeable
+                          key={item.id}
+                          renderRightActions={() => (
+                            <TouchableOpacity
+                              style={styles.deleteAction}
+                              onPress={() => deleteItem(group.id, item)}
+                            >
+                              <Text style={styles.deleteText}>Delete</Text>
+                            </TouchableOpacity>
+                          )}
                         >
-                          <TouchableOpacity
-                            onPress={() => toggleItem(group.id, item.id)}
-                          >
-                            <Text style={styles.checkbox}>
-                              {item.done ? "☑" : "☐"}
-                            </Text>
-                          </TouchableOpacity>
-                          <Text
+                          <View
                             style={[
-                              styles.itemText(theme),
-                              item.done && styles.itemDone(theme),
+                              styles.itemRow(theme),
+                              highlightedItemId === item.id &&
+                                styles.highlightedItem,
                             ]}
                           >
-                            {item.title}
-                          </Text>
-                        </View>
-                      </Swipeable>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
+                            <TouchableOpacity
+                              onPress={() => toggleItem(group.id, item.id)}
+                            >
+                              <Text style={styles.checkbox}>
+                                {item.done ? "☑" : "☐"}
+                              </Text>
+                            </TouchableOpacity>
+                            <Text
+                              style={[
+                                styles.itemText(theme),
+                                item.done && styles.itemDone(theme),
+                              ]}
+                            >
+                              {item.title}
+                            </Text>
+                          </View>
+                        </Swipeable>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+            </Swipeable>
           ))}
         </ScrollView>
 
@@ -336,6 +417,10 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 12,
   }),
+  highlightedGroup: {
+    backgroundColor: "#ADD8E6",
+    opacity: 0.9,
+  },
   groupTitle: (t) => ({
     fontSize: 18,
     fontWeight: "600",

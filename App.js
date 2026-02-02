@@ -104,15 +104,18 @@ export default function App() {
   const deleteItem = async (groupId, item) => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+    let itemIndex = 0;
     setGroups((prev) =>
-      prev.map((g) =>
-        g.id === groupId
-          ? { ...g, items: g.items.filter((i) => i.id !== item.id) }
-          : g,
-      ),
+      prev.map((g) => {
+        if (g.id === groupId) {
+          itemIndex = g.items.findIndex((i) => i.id === item.id);
+          return { ...g, items: g.items.filter((i) => i.id !== item.id) };
+        }
+        return g;
+      }),
     );
 
-    setLastDeleted({ groupId, item });
+    setLastDeleted({ groupId, item, index: itemIndex });
     setShowUndo(true);
 
     if (undoTimer.current) clearTimeout(undoTimer.current);
@@ -123,11 +126,14 @@ export default function App() {
     if (!lastDeleted) return;
 
     setGroups((prev) =>
-      prev.map((g) =>
-        g.id === lastDeleted.groupId
-          ? { ...g, items: [...g.items, lastDeleted.item] }
-          : g,
-      ),
+      prev.map((g) => {
+        if (g.id === lastDeleted.groupId) {
+          const newItems = [...g.items];
+          newItems.splice(lastDeleted.index, 0, lastDeleted.item);
+          return { ...g, items: newItems };
+        }
+        return g;
+      }),
     );
 
     setShowUndo(false);

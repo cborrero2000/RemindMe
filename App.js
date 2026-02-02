@@ -182,80 +182,82 @@ export default function App() {
           </TouchableOpacity>
         </View>
 
-        {groups.map((group) => (
-          <View key={group.id} style={styles.groupCard(theme)}>
-            <TouchableOpacity
-              onPress={() =>
-                setActiveGroupId(activeGroupId === group.id ? null : group.id)
-              }
-            >
-              <Text style={styles.groupTitle(theme)}>{group.title}</Text>
-            </TouchableOpacity>
+        <ScrollView style={styles.groupsScroll}>
+          {groups.map((group) => (
+            <View key={group.id} style={styles.groupCard(theme)}>
+              <TouchableOpacity
+                onPress={() =>
+                  setActiveGroupId(activeGroupId === group.id ? null : group.id)
+                }
+              >
+                <Text style={styles.groupTitle(theme)}>{group.title}</Text>
+              </TouchableOpacity>
 
-            {activeGroupId === group.id && (
-              <View style={{ marginTop: 10 }}>
-                <View style={styles.inputRow}>
-                  <TextInput
-                    style={styles.input(theme)}
-                    placeholder="Add item…"
-                    placeholderTextColor={theme.subtext}
-                    value={itemText}
-                    onChangeText={setItemText}
-                  />
-                  <TouchableOpacity
-                    style={styles.addBtn(theme)}
-                    onPress={addItem}
-                  >
-                    <Text style={styles.addText}>＋</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <ScrollView
-                  style={styles.itemsScroll}
-                  ref={(ref) => (scrollViewRefs.current[group.id] = ref)}
-                >
-                  {group.items.map((item) => (
-                    <Swipeable
-                      key={item.id}
-                      renderRightActions={() => (
-                        <TouchableOpacity
-                          style={styles.deleteAction}
-                          onPress={() => deleteItem(group.id, item)}
-                        >
-                          <Text style={styles.deleteText}>Delete</Text>
-                        </TouchableOpacity>
-                      )}
+              {activeGroupId === group.id && (
+                <View style={{ marginTop: 10 }}>
+                  <View style={styles.inputRow}>
+                    <TextInput
+                      style={styles.input(theme)}
+                      placeholder="Add item…"
+                      placeholderTextColor={theme.subtext}
+                      value={itemText}
+                      onChangeText={setItemText}
+                    />
+                    <TouchableOpacity
+                      style={styles.addBtn(theme)}
+                      onPress={addItem}
                     >
-                      <View
-                        style={[
-                          styles.itemRow(theme),
-                          highlightedItemId === item.id &&
-                            styles.highlightedItem,
-                        ]}
+                      <Text style={styles.addText}>＋</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <ScrollView
+                    style={styles.itemsScroll}
+                    ref={(ref) => (scrollViewRefs.current[group.id] = ref)}
+                  >
+                    {group.items.map((item) => (
+                      <Swipeable
+                        key={item.id}
+                        renderRightActions={() => (
+                          <TouchableOpacity
+                            style={styles.deleteAction}
+                            onPress={() => deleteItem(group.id, item)}
+                          >
+                            <Text style={styles.deleteText}>Delete</Text>
+                          </TouchableOpacity>
+                        )}
                       >
-                        <TouchableOpacity
-                          onPress={() => toggleItem(group.id, item.id)}
-                        >
-                          <Text style={styles.checkbox}>
-                            {item.done ? "☑" : "☐"}
-                          </Text>
-                        </TouchableOpacity>
-                        <Text
+                        <View
                           style={[
-                            styles.itemText(theme),
-                            item.done && styles.itemDone(theme),
+                            styles.itemRow(theme),
+                            highlightedItemId === item.id &&
+                              styles.highlightedItem,
                           ]}
                         >
-                          {item.title}
-                        </Text>
-                      </View>
-                    </Swipeable>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
-          </View>
-        ))}
+                          <TouchableOpacity
+                            onPress={() => toggleItem(group.id, item.id)}
+                          >
+                            <Text style={styles.checkbox}>
+                              {item.done ? "☑" : "☐"}
+                            </Text>
+                          </TouchableOpacity>
+                          <Text
+                            style={[
+                              styles.itemText(theme),
+                              item.done && styles.itemDone(theme),
+                            ]}
+                          >
+                            {item.title}
+                          </Text>
+                        </View>
+                      </Swipeable>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+          ))}
+        </ScrollView>
 
         {showUndo && (
           <View style={styles.undoBar(theme)}>
@@ -305,6 +307,9 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: "row",
     marginBottom: 10,
+  },
+  groupsScroll: {
+    flex: 1,
   },
   input: (t) => ({
     flex: 1,

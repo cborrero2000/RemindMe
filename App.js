@@ -362,7 +362,12 @@ export default function App() {
         {showUndo && (
           <View style={styles.undoBar(theme)}>
             <Text style={{ color: theme.text }}>Item deleted</Text>
-            <TouchableOpacity onPress={undoDelete}>
+            <TouchableOpacity
+              onPress={async () => {
+                await Haptics.selectionAsync();
+                undoDelete();
+              }}
+            >
               <Text style={{ color: theme.primary, fontWeight: "600" }}>
                 UNDO
               </Text>

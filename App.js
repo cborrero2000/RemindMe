@@ -53,6 +53,7 @@ export default function App() {
   /* ---------------- Load / Save ---------------- */
   useEffect(() => {
     loadGroups();
+    loadTheme();
   }, []);
 
   useEffect(() => {
@@ -71,9 +72,20 @@ export default function App() {
     AsyncStorage.setItem("groups", JSON.stringify(groups));
   }, [groups]);
 
+  useEffect(() => {
+    AsyncStorage.setItem("theme", isDarkMode ? "dark" : "light");
+  }, [isDarkMode]);
+
   const loadGroups = async () => {
     const data = await AsyncStorage.getItem("groups");
     if (data) setGroups(JSON.parse(data));
+  };
+
+  const loadTheme = async () => {
+    const stored = await AsyncStorage.getItem("theme");
+    if (stored === "dark" || stored === "light") {
+      setIsDarkMode(stored === "dark");
+    }
   };
 
   /* ---------------- Actions ---------------- */

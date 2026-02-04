@@ -61,7 +61,7 @@ export default function App() {
 
   useEffect(() => {
     Animated.timing(themeThumbAnim, {
-      toValue: isDarkMode ? 0 : 1,
+      toValue: isDarkMode ? 1 : 0,
       duration: 220,
       useNativeDriver: true,
     }).start();
@@ -178,7 +178,10 @@ export default function App() {
     if (groupIndex <= 0) return;
     setGroups((prev) => {
       const next = [...prev];
-      [next[groupIndex - 1], next[groupIndex]] = [next[groupIndex], next[groupIndex - 1]];
+      [next[groupIndex - 1], next[groupIndex]] = [
+        next[groupIndex],
+        next[groupIndex - 1],
+      ];
       return next;
     });
     setReorderContext(null);
@@ -188,7 +191,10 @@ export default function App() {
     setGroups((prev) => {
       if (groupIndex >= prev.length - 1) return prev;
       const next = [...prev];
-      [next[groupIndex], next[groupIndex + 1]] = [next[groupIndex + 1], next[groupIndex]];
+      [next[groupIndex], next[groupIndex + 1]] = [
+        next[groupIndex + 1],
+        next[groupIndex],
+      ];
       return next;
     });
     setReorderContext(null);
@@ -200,7 +206,10 @@ export default function App() {
       prev.map((g) => {
         if (g.id !== groupId) return g;
         const items = [...g.items];
-        [items[itemIndex - 1], items[itemIndex]] = [items[itemIndex], items[itemIndex - 1]];
+        [items[itemIndex - 1], items[itemIndex]] = [
+          items[itemIndex],
+          items[itemIndex - 1],
+        ];
         return { ...g, items };
       }),
     );
@@ -213,7 +222,10 @@ export default function App() {
         if (g.id !== groupId) return g;
         if (itemIndex >= g.items.length - 1) return g;
         const items = [...g.items];
-        [items[itemIndex], items[itemIndex + 1]] = [items[itemIndex + 1], items[itemIndex]];
+        [items[itemIndex], items[itemIndex + 1]] = [
+          items[itemIndex + 1],
+          items[itemIndex],
+        ];
         return { ...g, items };
       }),
     );
@@ -317,7 +329,9 @@ export default function App() {
               />
             </View>
             <View style={styles.themeToggleHalves} pointerEvents="none">
-              <View style={[styles.themeToggleHalf, styles.themeToggleHalfLeft]}>
+              <View
+                style={[styles.themeToggleHalf, styles.themeToggleHalfLeft]}
+              >
                 <Text
                   style={styles.themeToggleLabel(theme, !isDarkMode)}
                   numberOfLines={2}
@@ -325,7 +339,9 @@ export default function App() {
                   LIGHT{"\n"}MODE
                 </Text>
               </View>
-              <View style={[styles.themeToggleHalf, styles.themeToggleHalfRight]}>
+              <View
+                style={[styles.themeToggleHalf, styles.themeToggleHalfRight]}
+              >
                 <Text
                   style={styles.themeToggleLabel(theme, isDarkMode)}
                   numberOfLines={2}
@@ -342,7 +358,7 @@ export default function App() {
                     {
                       translateX: themeThumbAnim.interpolate({
                         inputRange: [0, 1],
-                        outputRange: [4, 132],
+                        outputRange: [0, 128],
                       }),
                     },
                   ],
@@ -397,7 +413,9 @@ export default function App() {
                     )
                   }
                   onLongPress={async () => {
-                    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    await Haptics.impactAsync(
+                      Haptics.ImpactFeedbackStyle.Medium,
+                    );
                     setReorderContext({
                       type: "group",
                       groupId: group.id,
@@ -517,9 +535,7 @@ export default function App() {
                   {reorderContext.groupIndex > 0 && (
                     <TouchableOpacity
                       style={styles.reorderBtn(theme)}
-                      onPress={() =>
-                        moveGroupUp(reorderContext.groupIndex)
-                      }
+                      onPress={() => moveGroupUp(reorderContext.groupIndex)}
                     >
                       <Text style={styles.reorderBtnText(theme)}>Move up</Text>
                     </TouchableOpacity>
@@ -527,44 +543,49 @@ export default function App() {
                   {reorderContext.groupIndex < groups.length - 1 && (
                     <TouchableOpacity
                       style={styles.reorderBtn(theme)}
-                      onPress={() =>
-                        moveGroupDown(reorderContext.groupIndex)
-                      }
+                      onPress={() => moveGroupDown(reorderContext.groupIndex)}
                     >
-                      <Text style={styles.reorderBtnText(theme)}>Move down</Text>
+                      <Text style={styles.reorderBtnText(theme)}>
+                        Move down
+                      </Text>
                     </TouchableOpacity>
                   )}
                 </>
               )}
-              {reorderContext?.type === "item" && (() => {
-                const g = groups.find((x) => x.id === reorderContext.groupId);
-                const len = g?.items?.length ?? 0;
-                const idx = reorderContext.itemIndex ?? 0;
-                return (
-                  <>
-                    {idx > 0 && (
-                      <TouchableOpacity
-                        style={styles.reorderBtn(theme)}
-                        onPress={() =>
-                          moveItemUp(reorderContext.groupId, idx)
-                        }
-                      >
-                        <Text style={styles.reorderBtnText(theme)}>Move up</Text>
-                      </TouchableOpacity>
-                    )}
-                    {idx < len - 1 && (
-                      <TouchableOpacity
-                        style={styles.reorderBtn(theme)}
-                        onPress={() =>
-                          moveItemDown(reorderContext.groupId, idx)
-                        }
-                      >
-                        <Text style={styles.reorderBtnText(theme)}>Move down</Text>
-                      </TouchableOpacity>
-                    )}
-                  </>
-                );
-              })()}
+              {reorderContext?.type === "item" &&
+                (() => {
+                  const g = groups.find((x) => x.id === reorderContext.groupId);
+                  const len = g?.items?.length ?? 0;
+                  const idx = reorderContext.itemIndex ?? 0;
+                  return (
+                    <>
+                      {idx > 0 && (
+                        <TouchableOpacity
+                          style={styles.reorderBtn(theme)}
+                          onPress={() =>
+                            moveItemUp(reorderContext.groupId, idx)
+                          }
+                        >
+                          <Text style={styles.reorderBtnText(theme)}>
+                            Move up
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                      {idx < len - 1 && (
+                        <TouchableOpacity
+                          style={styles.reorderBtn(theme)}
+                          onPress={() =>
+                            moveItemDown(reorderContext.groupId, idx)
+                          }
+                        >
+                          <Text style={styles.reorderBtnText(theme)}>
+                            Move down
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  );
+                })()}
               <TouchableOpacity
                 style={[styles.reorderBtn(theme), { marginTop: 8 }]}
                 onPress={() => setReorderContext(null)}

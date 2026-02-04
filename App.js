@@ -19,6 +19,7 @@ import {
   StatusBar,
   Modal,
   Pressable,
+  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -47,6 +48,7 @@ export default function App() {
   const highlightTimer = useRef(null);
   const scrollViewRefs = useRef({});
   const groupsScrollRef = useRef(null);
+  const themeThumbAnim = useRef(new Animated.Value(isDarkMode ? 0 : 1)).current;
 
   /* ---------------- Load / Save ---------------- */
   useEffect(() => {
@@ -55,6 +57,14 @@ export default function App() {
 
   useEffect(() => {
     StatusBar.setBarStyle(isDarkMode ? "light-content" : "dark-content");
+  }, [isDarkMode]);
+
+  useEffect(() => {
+    Animated.timing(themeThumbAnim, {
+      toValue: isDarkMode ? 0 : 1,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
   }, [isDarkMode]);
 
   useEffect(() => {
@@ -285,12 +295,66 @@ export default function App() {
       <SafeAreaView style={styles.container(theme)}>
         <View style={styles.titleRow}>
           <Text style={styles.title(theme)}>RemindMe</Text>
-          <TouchableOpacity
-            style={styles.themeBtn(theme)}
-            onPress={() => setIsDarkMode(!isDarkMode)}
-          >
-            <Text style={styles.themeBtnText}>{isDarkMode ? "☀️" : "🌙"}</Text>
-          </TouchableOpacity>
+          <View style={styles.themeToggleTrack(theme, isDarkMode)}>
+            <View style={styles.themeToggleTouchRow}>
+              <Pressable
+                style={styles.themeToggleHalfTouch}
+                onPress={async () => {
+                  if (isDarkMode) {
+                    await Haptics.selectionAsync();
+                    setIsDarkMode(false);
+                  }
+                }}
+              />
+              <Pressable
+                style={styles.themeToggleHalfTouch}
+                onPress={async () => {
+                  if (!isDarkMode) {
+                    await Haptics.selectionAsync();
+                    setIsDarkMode(true);
+                  }
+                }}
+              />
+            </View>
+            <View style={styles.themeToggleHalves} pointerEvents="none">
+              <View style={[styles.themeToggleHalf, styles.themeToggleHalfLeft]}>
+                <Text
+                  style={styles.themeToggleLabel(theme, !isDarkMode)}
+                  numberOfLines={2}
+                >
+                  LIGHT{"\n"}MODE
+                </Text>
+              </View>
+              <View style={[styles.themeToggleHalf, styles.themeToggleHalfRight]}>
+                <Text
+                  style={styles.themeToggleLabel(theme, isDarkMode)}
+                  numberOfLines={2}
+                >
+                  DARK{"\n"}MODE
+                </Text>
+              </View>
+            </View>
+            <Animated.View
+              style={[
+                styles.themeToggleThumb(theme),
+                {
+                  transform: [
+                    {
+                      translateX: themeThumbAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [4, 132],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+              pointerEvents="none"
+            >
+              <Text style={styles.themeToggleThumbIcon}>
+                {isDarkMode ? "🌙" : "☀️"}
+              </Text>
+            </Animated.View>
+          </View>
         </View>
 
         {/* Add Group */}
@@ -567,16 +631,89 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  themeBtn: (t) => ({
-    backgroundColor: t.card,
-    borderRadius: 12,
-    width: 48,
-    height: 48,
+  themeToggleTrack: (t, isDark) => ({
+    width: 180,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: isDark ? "#374151" : "#E4E8EC",
+    overflow: "hidden",
+    position: "relative",
+    ...(isDark
+      ? {
+          shadowColor: "#000",
+          shadowOffset: { width: 2, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 3,
+          elevation: 4,
+        }
+      : {
+          shadowColor: "#000",
+          shadowOffset: { width: -1, height: -1 },
+          shadowOpacity: 0.06,
+          shadowRadius: 2,
+          elevation: 1,
+        }),
+  }),
+  themeToggleTouchRow: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    flexDirection: "row",
+  },
+  themeToggleHalfTouch: {
+    flex: 1,
+  },
+  themeToggleHalves: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 12,
+  },
+  themeToggleHalf: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  themeToggleHalfLeft: {
+    alignItems: "flex-end",
+    paddingRight: 8,
+  },
+  themeToggleHalfRight: {
+    alignItems: "flex-start",
+    paddingLeft: 8,
+  },
+  themeToggleLabel: (t, active) => ({
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+    color: active ? t.text : t.subtext,
+    textAlign: "center",
   }),
-  themeBtnText: {
-    fontSize: 24,
+  themeToggleThumb: (t) => ({
+    position: "absolute",
+    left: 4,
+    top: 4,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: t.card,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 1, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 4,
+  }),
+  themeToggleThumbIcon: {
+    fontSize: 20,
   },
   inputRow: {
     flexDirection: "row",

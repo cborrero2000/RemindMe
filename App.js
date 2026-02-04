@@ -17,6 +17,8 @@ import {
   useColorScheme,
   ScrollView,
   StatusBar,
+  Modal,
+  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -40,6 +42,7 @@ export default function App() {
   const [showUndo, setShowUndo] = useState(false);
   const [highlightedItemId, setHighlightedItemId] = useState(null);
   const [highlightedGroupId, setHighlightedGroupId] = useState(null);
+  const [reorderContext, setReorderContext] = useState(null); // { type: 'group'|'item', groupId, groupIndex?, itemId?, itemIndex? }
   const undoTimer = useRef(null);
   const highlightTimer = useRef(null);
   const scrollViewRefs = useRef({});
@@ -161,6 +164,52 @@ export default function App() {
     undoTimer.current = setTimeout(() => setShowUndo(false), 4000);
   };
 
+  const moveGroupUp = (groupIndex) => {
+    if (groupIndex <= 0) return;
+    setGroups((prev) => {
+      const next = [...prev];
+      [next[groupIndex - 1], next[groupIndex]] = [next[groupIndex], next[groupIndex - 1]];
+      return next;
+    });
+    setReorderContext(null);
+  };
+
+  const moveGroupDown = (groupIndex) => {
+    setGroups((prev) => {
+      if (groupIndex >= prev.length - 1) return prev;
+      const next = [...prev];
+      [next[groupIndex], next[groupIndex + 1]] = [next[groupIndex + 1], next[groupIndex]];
+      return next;
+    });
+    setReorderContext(null);
+  };
+
+  const moveItemUp = (groupId, itemIndex) => {
+    if (itemIndex <= 0) return;
+    setGroups((prev) =>
+      prev.map((g) => {
+        if (g.id !== groupId) return g;
+        const items = [...g.items];
+        [items[itemIndex - 1], items[itemIndex]] = [items[itemIndex], items[itemIndex - 1]];
+        return { ...g, items };
+      }),
+    );
+    setReorderContext(null);
+  };
+
+  const moveItemDown = (groupId, itemIndex) => {
+    setGroups((prev) =>
+      prev.map((g) => {
+        if (g.id !== groupId) return g;
+        if (itemIndex >= g.items.length - 1) return g;
+        const items = [...g.items];
+        [items[itemIndex], items[itemIndex + 1]] = [items[itemIndex + 1], items[itemIndex]];
+        return { ...g, items };
+      }),
+    );
+    setReorderContext(null);
+  };
+
   const undoDelete = () => {
     if (!lastDeleted) return;
 
@@ -259,7 +308,7 @@ export default function App() {
         </View>
 
         <ScrollView style={styles.groupsScroll} ref={groupsScrollRef}>
-          {groups.map((group) => (
+          {groups.map((group, groupIndex) => (
             <Swipeable
               key={group.id}
               renderRightActions={() => (
@@ -277,15 +326,23 @@ export default function App() {
                   highlightedGroupId === group.id && styles.highlightedGroup,
                 ]}
               >
-                <TouchableOpacity
+                <Pressable
                   onPress={() =>
                     setActiveGroupId(
                       activeGroupId === group.id ? null : group.id,
                     )
                   }
+                  onLongPress={async () => {
+                    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    setReorderContext({
+                      type: "group",
+                      groupId: group.id,
+                      groupIndex,
+                    });
+                  }}
                 >
                   <Text style={styles.groupTitle(theme)}>{group.title}</Text>
-                </TouchableOpacity>
+                </Pressable>
 
                 {activeGroupId === group.id && (
                   <View style={{ marginTop: 10 }}>
@@ -309,7 +366,7 @@ export default function App() {
                       style={styles.itemsScroll}
                       ref={(ref) => (scrollViewRefs.current[group.id] = ref)}
                     >
-                      {group.items.map((item) => (
+                      {group.items.map((item, itemIndex) => (
                         <Swipeable
                           key={item.id}
                           renderRightActions={() => (
@@ -321,34 +378,48 @@ export default function App() {
                             </TouchableOpacity>
                           )}
                         >
-                          <View
-                            style={[
-                              styles.itemRow(theme),
-                              highlightedItemId === item.id &&
-                                styles.highlightedItem,
-                            ]}
+                          <Pressable
+                            onLongPress={async () => {
+                              await Haptics.impactAsync(
+                                Haptics.ImpactFeedbackStyle.Medium,
+                              );
+                              setReorderContext({
+                                type: "item",
+                                groupId: group.id,
+                                itemId: item.id,
+                                itemIndex,
+                              });
+                            }}
                           >
-                            <TouchableOpacity
-                              onPress={() => toggleItem(group.id, item.id)}
-                            >
-                              <Text
-                                style={[
-                                  styles.checkbox,
-                                  { color: theme.primary },
-                                ]}
-                              >
-                                {item.done ? "☑" : "☐"}
-                              </Text>
-                            </TouchableOpacity>
-                            <Text
+                            <View
                               style={[
-                                styles.itemText(theme),
-                                item.done && styles.itemDone(theme),
+                                styles.itemRow(theme),
+                                highlightedItemId === item.id &&
+                                  styles.highlightedItem,
                               ]}
                             >
-                              {item.title}
-                            </Text>
-                          </View>
+                              <TouchableOpacity
+                                onPress={() => toggleItem(group.id, item.id)}
+                              >
+                                <Text
+                                  style={[
+                                    styles.checkbox,
+                                    { color: theme.primary },
+                                  ]}
+                                >
+                                  {item.done ? "☑" : "☐"}
+                                </Text>
+                              </TouchableOpacity>
+                              <Text
+                                style={[
+                                  styles.itemText(theme),
+                                  item.done && styles.itemDone(theme),
+                                ]}
+                              >
+                                {item.title}
+                              </Text>
+                            </View>
+                          </Pressable>
                         </Swipeable>
                       ))}
                     </ScrollView>
@@ -358,6 +429,87 @@ export default function App() {
             </Swipeable>
           ))}
         </ScrollView>
+
+        {/* Reorder menu (long-press) */}
+        <Modal
+          visible={!!reorderContext}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setReorderContext(null)}
+        >
+          <Pressable
+            style={styles.reorderBackdrop}
+            onPress={() => setReorderContext(null)}
+          >
+            <Pressable
+              style={styles.reorderSheet(theme)}
+              onPress={(e) => e.stopPropagation()}
+            >
+              <Text style={styles.reorderTitle(theme)}>
+                {reorderContext?.type === "group" ? "Move group" : "Move item"}
+              </Text>
+              {reorderContext?.type === "group" && (
+                <>
+                  {reorderContext.groupIndex > 0 && (
+                    <TouchableOpacity
+                      style={styles.reorderBtn(theme)}
+                      onPress={() =>
+                        moveGroupUp(reorderContext.groupIndex)
+                      }
+                    >
+                      <Text style={styles.reorderBtnText(theme)}>Move up</Text>
+                    </TouchableOpacity>
+                  )}
+                  {reorderContext.groupIndex < groups.length - 1 && (
+                    <TouchableOpacity
+                      style={styles.reorderBtn(theme)}
+                      onPress={() =>
+                        moveGroupDown(reorderContext.groupIndex)
+                      }
+                    >
+                      <Text style={styles.reorderBtnText(theme)}>Move down</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
+              {reorderContext?.type === "item" && (() => {
+                const g = groups.find((x) => x.id === reorderContext.groupId);
+                const len = g?.items?.length ?? 0;
+                const idx = reorderContext.itemIndex ?? 0;
+                return (
+                  <>
+                    {idx > 0 && (
+                      <TouchableOpacity
+                        style={styles.reorderBtn(theme)}
+                        onPress={() =>
+                          moveItemUp(reorderContext.groupId, idx)
+                        }
+                      >
+                        <Text style={styles.reorderBtnText(theme)}>Move up</Text>
+                      </TouchableOpacity>
+                    )}
+                    {idx < len - 1 && (
+                      <TouchableOpacity
+                        style={styles.reorderBtn(theme)}
+                        onPress={() =>
+                          moveItemDown(reorderContext.groupId, idx)
+                        }
+                      >
+                        <Text style={styles.reorderBtnText(theme)}>Move down</Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                );
+              })()}
+              <TouchableOpacity
+                style={[styles.reorderBtn(theme), { marginTop: 8 }]}
+                onPress={() => setReorderContext(null)}
+              >
+                <Text style={styles.reorderBtnText(theme)}>Cancel</Text>
+              </TouchableOpacity>
+            </Pressable>
+          </Pressable>
+        </Modal>
 
         {showUndo && (
           <View style={styles.undoBar(theme)}>
@@ -521,5 +673,35 @@ const styles = StyleSheet.create({
     elevation: 999,
     zIndex: 999,
     minHeight: 72,
+  }),
+  reorderBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  reorderSheet: (t) => ({
+    backgroundColor: t.card,
+    borderRadius: 16,
+    padding: 20,
+    minWidth: 240,
+  }),
+  reorderTitle: (t) => ({
+    fontSize: 16,
+    fontWeight: "600",
+    color: t.subtext,
+    marginBottom: 12,
+  }),
+  reorderBtn: (t) => ({
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: t.bg,
+  }),
+  reorderBtnText: (t) => ({
+    fontSize: 16,
+    color: t.primary,
+    fontWeight: "600",
   }),
 });

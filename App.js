@@ -27,6 +27,44 @@ import {
 } from "react-native-gesture-handler";
 import DraggableFlatList from "react-native-draggable-flatlist";
 
+const Checkbox = ({ checked, onToggle, theme }) => {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const animate = () => {
+    Animated.sequence([
+      Animated.timing(scale, {
+        toValue: 0.85,
+        duration: 80,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1,
+        friction: 4,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handlePress = () => {
+    animate();
+    onToggle();
+  };
+
+  return (
+    <Pressable onPress={handlePress}>
+      <Animated.View
+        style={[
+          styles.checkboxOuter(theme, checked),
+          { transform: [{ scale }] },
+        ]}
+      >
+        {checked && <View style={styles.checkboxInner(theme)} />}
+      </Animated.View>
+    </Pressable>
+  );
+};
+
+
 export default function App() {
   const scheme = useColorScheme();
   const [isDarkMode, setIsDarkMode] = useState(scheme === "dark");
@@ -102,16 +140,32 @@ export default function App() {
     setItemText("");
   };
 
-  const toggleItem = async (groupId, itemId) => {
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setGroups((p) =>
-      p.map((g) =>
-        g.id === groupId
-          ? { ...g, items: g.items.map((i) => (i.id === itemId ? { ...i, done: !i.done } : i)) }
-          : g,
-      ),
+  const toggleItem = (groupId, itemId) => {
+    let wasDone = false;
+  
+    setGroups((prev) =>
+      prev.map((g) => {
+        if (g.id !== groupId) return g;
+  
+        return {
+          ...g,
+          items: g.items.map((i) => {
+            if (i.id !== itemId) return i;
+            wasDone = i.done;
+            return { ...i, done: !i.done };
+          }),
+        };
+      })
+    );
+  
+    Haptics.impactAsync(
+      wasDone
+        ? Haptics.ImpactFeedbackStyle.Light
+        : Haptics.ImpactFeedbackStyle.Medium
     );
   };
+  
+  
 
   const deleteGroup = async (group) => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -300,9 +354,12 @@ export default function App() {
                             onLongPress={drag}
                             style={[styles.itemRow(theme), isActive && { opacity: 0.6 }]}
                           >
-                            <Text style={styles.checkbox(theme, item.done)} onPress={() => toggleItem(group.id, item.id)}>
-                              {item.done ? "☑" : "☐"}
-                            </Text>
+                          <Checkbox
+                            checked={item.done}
+                            theme={theme}
+                            onToggle={() => toggleItem(group.id, item.id)}
+                          />
+
                             <Text style={[styles.itemText(theme), item.done && styles.itemDone(theme)]}>
                               {item.title}
                             </Text>
@@ -448,4 +505,22 @@ themeToggleTrack: (t, isDark) => ({
   themeToggleThumbIcon: {
     fontSize: 20,
   },
+  checkboxOuter: (t, checked) => ({
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: checked ? t.primary : t.subtext,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  }),
+  
+  checkboxInner: (t) => ({
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: t.primary,
+  }),
+  
 });

@@ -300,7 +300,7 @@ export default function App() {
                             onLongPress={drag}
                             style={[styles.itemRow(theme), isActive && { opacity: 0.6 }]}
                           >
-                            <Text style={styles.checkbox} onPress={() => toggleItem(group.id, item.id)}>
+                            <Text style={styles.checkbox(theme, item.done)} onPress={() => toggleItem(group.id, item.id)}>
                               {item.done ? "☑" : "☐"}
                             </Text>
                             <Text style={[styles.itemText(theme), item.done && styles.itemDone(theme)]}>
@@ -347,7 +347,12 @@ const styles = StyleSheet.create({
   groupCard: (t) => ({ backgroundColor: t.card, borderRadius: 16, padding: 14, marginBottom: 12 }),
   groupTitle: (t) => ({ fontSize: 18, fontWeight: "600", color: t.text }),
   itemRow: (t) => ({ flexDirection: "row", alignItems: "center", paddingVertical: 10 }),
-  checkbox: { fontSize: 20, marginRight: 12 },
+  checkbox: (t, done) => ({
+    fontSize: 22,
+    marginRight: 12,
+    color: done ? t.primary : t.subtext,
+  }),
+  
   itemText: (t) => ({ fontSize: 16, color: t.text }),
   itemDone: (t) => ({ textDecorationLine: "line-through", color: t.subtext }),
   deleteAction: { backgroundColor: "#EF4444", justifyContent: "center", alignItems: "flex-end", paddingHorizontal: 20 },

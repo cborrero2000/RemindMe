@@ -209,6 +209,23 @@ export default function App() {
     setLastDeleted(null);
   };
 
+  const renderDeletePill = (onPress) => (
+    <TouchableOpacity
+    onPress={async () => {
+      await Haptics.notificationAsync(
+        Haptics.NotificationFeedbackType.Warning
+      );
+      onPress();
+    }}
+    
+      activeOpacity={0.85}
+      style={styles.deletePill}
+    >
+      <Text style={styles.deletePillIcon}>🗑</Text>
+      <Text style={styles.deletePillText}>Delete</Text>
+    </TouchableOpacity>
+  );
+
   /* ---------- Render ---------- */
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -303,11 +320,10 @@ export default function App() {
           onDragEnd={({ data }) => hasLoaded.current && setGroups(data)}
           renderItem={({ item: group, drag, isActive }) => (
             <Swipeable
-              renderRightActions={() => (
-                <TouchableOpacity style={styles.deleteAction} onPress={() => deleteGroup(group)}>
-                  <Text style={styles.deleteText}>Delete</Text>
-                </TouchableOpacity>
-              )}
+            renderRightActions={() =>
+              renderDeletePill(() => deleteGroup(group))
+            }
+            
             >
               <TouchableOpacity
                 onLongPress={drag}
@@ -343,14 +359,10 @@ export default function App() {
                       }
                       renderItem={({ item, drag, isActive }) => (
                         <Swipeable
-                          renderRightActions={() => (
-                            <TouchableOpacity
-                              style={styles.deleteAction}
-                              onPress={() => deleteItem(group.id, item)}
-                            >
-                              <Text style={styles.deleteText}>Delete</Text>
-                            </TouchableOpacity>
-                          )}
+                        renderRightActions={() =>
+                          renderDeletePill(() => deleteItem(group.id, item))
+                        }
+                        
                         >
                           <TouchableOpacity
                             onLongPress={drag}
@@ -524,5 +536,27 @@ themeToggleTrack: (t, isDark) => ({
     borderRadius: 5,
     backgroundColor: t.primary,
   }),
+  deletePill: {
+    backgroundColor: "#EF4444",
+    borderRadius: 22,
+    marginVertical: 8,
+    marginRight: 10,
+    paddingHorizontal: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  
+  deletePillIcon: {
+    fontSize: 18,
+    marginRight: 6,
+  },
+  
+  deletePillText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  
   
 });

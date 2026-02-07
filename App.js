@@ -23,8 +23,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import {
   GestureHandlerRootView,
-  Swipeable,
+  
 } from "react-native-gesture-handler";
+import Swipeable from "react-native-gesture-handler/ReanimatedSwipeable";
+
 import DraggableFlatList from "react-native-draggable-flatlist";
 
 const Checkbox = ({ checked, onToggle, theme }) => {
